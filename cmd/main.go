@@ -3,21 +3,26 @@ package main
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/miaababikir/ideas/internal/database"
+	"github.com/miaababikir/ideas/internal/env"
+	"github.com/miaababikir/ideas/internal/router"
 )
 
-type App struct {
-	Port string
-}
-
 func main() {
-	app := App{
-		Port: "8080",
-	}
 
-	http.HandleFunc("GET /health", app.HealthHandler)
+	database.Connect(env.GetString("DB_ADDR", "root:root@tcp(127.0.0.1:3306)/ideas"))
+
+	port := env.GetString("PORT", "8080")
+
+	app := router.App{
+		Port: port,
+	}
 
 	fmt.Printf("Server listening on port %s", app.Port)
 
-	http.ListenAndServe(":"+app.Port, nil)
+	routes := app.RegisterRoutes()
+
+	http.ListenAndServe(":"+app.Port, routes)
 
 }
