@@ -11,7 +11,7 @@ import (
 
 func main() {
 
-	dbConn := database.Connect(env.GetString("DB_ADDR", "root:root@tcp(127.0.0.1:3306)/ideas?parseTime=true"))
+	dbConn := database.Connect(env.GetString("DB_ADDR", "root:root@tcp(127.0.0.1:3306)/ideas"))
 
 	defer dbConn.Close()
 

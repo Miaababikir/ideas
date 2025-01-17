@@ -17,21 +17,21 @@ type Idea struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type CreateIdeaRequest struct {
+type IdeaRequest struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
 }
 
 func (app *App) CreateIdeaHandler(w http.ResponseWriter, r *http.Request) {
 
-	createIdeaRequest := &CreateIdeaRequest{}
+	ideaRequest := &IdeaRequest{}
 
-	json.NewDecoder(r.Body).Decode(createIdeaRequest)
+	json.NewDecoder(r.Body).Decode(ideaRequest)
 
 	result, err := app.Db.Exec(
 		"INSERT INTO ideas (title, content) VALUES(?, ?)",
-		createIdeaRequest.Title,
-		createIdeaRequest.Content,
+		ideaRequest.Title,
+		ideaRequest.Content,
 	)
 
 	if err != nil {
@@ -45,6 +45,55 @@ func (app *App) CreateIdeaHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err)
 		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to create idea")
+		return
+	}
+
+	utils.RespondWithJson(w, http.StatusOK, id)
+
+}
+
+func (app *App) UpdateIdeaByIdHandler(w http.ResponseWriter, r *http.Request) {
+
+	id := r.PathValue("id")
+
+	ideaRequest := &IdeaRequest{}
+
+	err := json.NewDecoder(r.Body).Decode(ideaRequest)
+
+	if err != nil {
+		fmt.Println(err)
+		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to parse request")
+		return
+	}
+
+	_, err = app.Db.Exec(
+		"UPDATE ideas SET title = ?, content = ? WHERE id = ?",
+		ideaRequest.Title,
+		ideaRequest.Content,
+		id,
+	)
+
+	if err != nil {
+		fmt.Println(err)
+		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to update")
+		return
+	}
+
+	utils.RespondWithJson(w, http.StatusOK, id)
+
+}
+
+func (app *App) DeleteIdeaByIdHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+
+	_, err := app.Db.Exec(
+		"DELETE FROM ideas WHERE id = ?",
+		id,
+	)
+
+	if err != nil {
+		fmt.Println(err)
+		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to delete")
 		return
 	}
 
