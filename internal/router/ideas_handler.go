@@ -2,7 +2,7 @@ package router
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -35,7 +35,7 @@ func (app *App) CreateIdeaHandler(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to create idea")
 		return
 	}
@@ -43,7 +43,7 @@ func (app *App) CreateIdeaHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := result.LastInsertId()
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to create idea")
 		return
 	}
@@ -61,7 +61,7 @@ func (app *App) UpdateIdeaByIdHandler(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(ideaRequest)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to parse request")
 		return
 	}
@@ -74,7 +74,7 @@ func (app *App) UpdateIdeaByIdHandler(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to update")
 		return
 	}
@@ -92,7 +92,7 @@ func (app *App) DeleteIdeaByIdHandler(w http.ResponseWriter, r *http.Request) {
 	)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to delete")
 		return
 	}
@@ -105,15 +105,11 @@ func (app *App) GetIdeaByIdHandler(w http.ResponseWriter, r *http.Request) {
 
 	id := r.PathValue("id")
 
-	fmt.Println(id)
-
-	idea := Idea{}
-
-	err := app.Db.QueryRow("SELECT * FROM ideas WHERE id = ?", id).Scan(&idea.Id, &idea.Title, &idea.Content, &idea.CreatedAt, &idea.UpdatedAt)
+	idea, err := app.findById(id)
 
 	if err != nil {
-		fmt.Println(err)
-		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to fetch idea")
+		log.Println(err)
+		utils.RespondWithError(w, http.StatusNotFound, "Not found")
 		return
 	}
 
@@ -123,12 +119,24 @@ func (app *App) GetIdeaByIdHandler(w http.ResponseWriter, r *http.Request) {
 
 func (app *App) GetIdeasHandler(w http.ResponseWriter, r *http.Request) {
 
+	search := r.URL.Query().Get("search")
+
 	ideas := []Idea{}
 
-	rows, err := app.Db.Query("SELECT * FROM ideas ORDER BY created_at DESC")
+	query := "SELECT * FROM ideas WHERE true = true"
+	args := []interface{}{}
+
+	if search != "" {
+		query += " AND title LIKE ?"
+		args = append(args, "%"+search+"%")
+	}
+
+	query += " ORDER BY created_at DESC"
+
+	rows, err := app.Db.Query(query, args...)
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		utils.RespondWithError(w, http.StatusInternalServerError, "Failed to fetch ideas")
 		return
 	}
@@ -137,7 +145,7 @@ func (app *App) GetIdeasHandler(w http.ResponseWriter, r *http.Request) {
 		idea := Idea{}
 		err = rows.Scan(&idea.Id, &idea.Title, &idea.Content, &idea.CreatedAt, &idea.UpdatedAt)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			utils.RespondWithError(w, http.StatusInternalServerError, "Failed to fetch ideas")
 			return
 		}
@@ -145,4 +153,18 @@ func (app *App) GetIdeasHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.RespondWithJson(w, http.StatusOK, ideas)
+}
+
+func (app *App) findById(id string) (Idea, error) {
+
+	idea := Idea{}
+
+	err := app.Db.QueryRow("SELECT * FROM ideas WHERE id = ?", id).Scan(&idea.Id, &idea.Title, &idea.Content, &idea.CreatedAt, &idea.UpdatedAt)
+
+	if err != nil {
+		return idea, err
+	}
+
+	return idea, nil
+
 }
