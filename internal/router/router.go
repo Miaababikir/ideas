@@ -14,13 +14,15 @@ func (app *App) RegisterRoutes() *http.ServeMux {
 
 	router := http.NewServeMux()
 
-	router.HandleFunc("GET /health", app.HealthHandler)
+	router.HandleFunc("/", app.Home)
 
-	router.HandleFunc("GET /ideas", app.GetIdeasHandler)
-	router.HandleFunc("POST /ideas", app.CreateIdeaHandler)
-	router.HandleFunc("GET /ideas/{id}", app.GetIdeaByIdHandler)
-	router.HandleFunc("PUT /ideas/{id}", app.UpdateIdeaByIdHandler)
-	router.HandleFunc("DELETE /ideas/{id}", app.DeleteIdeaByIdHandler)
+	router.HandleFunc("GET /api/health", app.HealthHandler)
+
+	router.HandleFunc("GET /api/ideas", app.GetIdeasHandler)
+	router.HandleFunc("POST /api/ideas", app.CreateIdeaHandler)
+	router.HandleFunc("GET /api/ideas/{id}", app.GetIdeaByIdHandler)
+	router.HandleFunc("PUT /api/ideas/{id}", app.UpdateIdeaByIdHandler)
+	router.HandleFunc("DELETE /api/ideas/{id}", app.DeleteIdeaByIdHandler)
 
 	return router
 }
