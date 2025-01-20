@@ -14,8 +14,6 @@ func (app *App) RegisterRoutes() *http.ServeMux {
 
 	router := http.NewServeMux()
 
-	router.HandleFunc("/", app.Home)
-
 	router.HandleFunc("GET /api/health", app.HealthHandler)
 
 	router.HandleFunc("GET /api/ideas", app.GetIdeasHandler)
